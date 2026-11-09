@@ -1,6 +1,6 @@
 
-# Dependencies
-node_modules/
+# Dependencie
+node_modules
 
 # Package manager logs
 npm-debug.log*
