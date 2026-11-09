@@ -1,3 +1,4 @@
+
 import { backend_url } from "./main";
 import Nav from "./part/Nav";
 import './App.css';
@@ -22,8 +23,9 @@ export default function APIs() {
   const [newApiKey, setNewApiKey] = useState<boolean>(false);
   const [nickname, setNickname] = useState<string>("");
   const [apiKeys, setApiKeys] = useState<ApiKey[]>([]);
-  const token = localStorage.getItem('token');
   const [adding, setAdding] = useState<boolean>(false);
+
+  const token = localStorage.getItem('token');
 
   useEffect(() => {
     loadApiKeys();
@@ -38,18 +40,28 @@ export default function APIs() {
           'Authorization': `Bearer ${token}`
         }
       });
+
+      if (!response.ok) {
+        throw new Error("Failed to load API keys");
+      }
+
       const data: ApiKeyResponse[] = await response.json();
-      const formattedKeys: ApiKey[] = data.map((key: ApiKeyResponse) => ({
+
+      const formattedKeys: ApiKey[] = data.map((key) => ({
         api_key: key.api_key,
         nickname: key.nickname || 'Unnamed',
-        date_generated: key.date_created ? new Date(key.date_created).toLocaleDateString('en-GB', {
-          day: '2-digit',
-          month: '2-digit',
-          year: 'numeric'
-        }).replace(/\//g, '-') : 'N/A',
+        date_generated: key.date_created
+          ? new Date(key.date_created).toLocaleDateString('en-GB', {
+              day: '2-digit',
+              month: '2-digit',
+              year: 'numeric'
+            }).replace(/\//g, '-')
+          : 'N/A',
         status: 'active'
       }));
+
       setApiKeys(formattedKeys);
+
     } catch (error) {
       console.error('Error loading API keys:', error);
     }
@@ -57,7 +69,9 @@ export default function APIs() {
 
   const handleAddApiKey = async (): Promise<void> => {
     if (!nickname.trim()) return;
+
     setAdding(true);
+
     try {
       const response = await fetch(`${backend_url}/add_api_key`, {
         method: 'POST',
@@ -65,27 +79,39 @@ export default function APIs() {
           'Content-Type': 'application/json',
           'Authorization': `Bearer ${token}`
         },
-        body: JSON.stringify({ nickname: nickname.trim() })
+        body: JSON.stringify({
+          nickname: nickname.trim()
+        })
       });
+
+      if (!response.ok) {
+        throw new Error("Failed to add API key");
+      }
+
       const data: ApiKeyResponse = await response.json();
 
-      if (response.ok) {
-        const newKey: ApiKey = {
-          api_key: data.api_key,
-          nickname: data.nickname || 'Unnamed',
-          date_generated: data.date_created ? new Date(data.date_created).toLocaleDateString('en-GB', {
-            day: '2-digit',
-            month: '2-digit',
-            year: 'numeric'
-          }).replace(/\//g, '-') : 'N/A',
-          status: 'active'
-        };
-        setApiKeys([newKey, ...apiKeys]);
-        setNickname("");
-        setNewApiKey(false);
-      }
+      const newKey: ApiKey = {
+        api_key: data.api_key,
+        nickname: data.nickname || 'Unnamed',
+        date_generated: data.date_created
+          ? new Date(data.date_created).toLocaleDateString('en-GB', {
+              day: '2-digit',
+              month: '2-digit',
+              year: 'numeric'
+            }).replace(/\//g, '-')
+          : 'N/A',
+        status: 'active'
+      };
+
+      setApiKeys((previous) => [newKey, ...previous]);
+      setNickname("");
+      setNewApiKey(false);
+
     } catch (error) {
       console.error('Error adding API key:', error);
+
+    } finally {
+      setAdding(false);
     }
   };
 
@@ -97,14 +123,22 @@ export default function APIs() {
           'Content-Type': 'application/json',
           'Authorization': `Bearer ${token}`
         },
-        body: JSON.stringify({ api_key: apiKey })
+        body: JSON.stringify({
+          api_key: apiKey
+        })
       });
-      
-      if (response.ok) {
-        setApiKeys(apiKeys.filter((key: ApiKey) => key.api_key !== apiKey));
+
+      if (!response.ok) {
+        throw new Error("Failed to revoke API key");
       }
+
+      setApiKeys((previous) =>
+        previous.filter((key) => key.api_key !== apiKey)
+      );
+
     } catch (error) {
       console.error('Error revoking API key:', error);
+      throw error;
     }
   };
 
@@ -120,17 +154,22 @@ export default function APIs() {
       </header>
 
       <div className="api-keys-header">
-        <label className="headerLabel">API Keys</label>
-        <button type="button" className="api-key-add-button" aria-label="Add API key"
-        onClick={() => {
-          setNewApiKey(true);
-        }}>
+        <label className="headerLabel">
+          API Keys
+        </label>
+
+        <button
+          type="button"
+          className="api-key-add-button"
+          aria-label="Add API key"
+          onClick={() => setNewApiKey(true)}
+        >
           <RiAddFill size={18} />
         </button>
       </div>
 
-      {apiKeys.map((key: ApiKey, index: number) => (
-        <span key={index}>
+      {apiKeys.map((key) => (
+        <span key={key.api_key}>
           <Apigenandrevoke
             api_key={key.api_key}
             nickname={key.nickname}
@@ -142,43 +181,76 @@ export default function APIs() {
       ))}
 
       {newApiKey && (
-        <div className="modal-overlay" onClick={handleCloseModal}>
-          <div className="modal-content" onClick={(e) => e.stopPropagation()}>
+        <div
+          className="modal-overlay"
+          onClick={handleCloseModal}
+        >
+          <div
+            className="modal-content"
+            onClick={(event) => event.stopPropagation()}
+          >
+
             <div className="modal-header">
               <h2>Add New API Key</h2>
-              <button className="modal-close-btn" onClick={handleCloseModal}>×</button>
+
+              <button
+                className="modal-close-btn"
+                onClick={handleCloseModal}
+              >
+                ×
+              </button>
             </div>
-            
+
             <div className="modal-body">
               <div className="form-group">
-                <label htmlFor="nickname">Nickname *</label>
+
+                <label htmlFor="nickname">
+                  Nickname *
+                </label>
+
                 <input
                   type="text"
                   id="nickname"
                   placeholder="Enter API key nickname"
                   value={nickname}
-                  onChange={(e) => setNickname(e.target.value)}
+                  onChange={(event) =>
+                    setNickname(event.target.value)
+                  }
                   autoFocus
                 />
+
               </div>
             </div>
-            
+
             <div className="modal-footer">
-              <button className="modal-cancel-btn" onClick={handleCloseModal}>
+
+              <button
+                className="modal-cancel-btn"
+                onClick={handleCloseModal}
+              >
                 Cancel
               </button>
-              {!adding ? <button 
-                className="modal-add-btn" 
-                onClick={handleAddApiKey}
-                disabled={!nickname.trim()}
-              >
-                Generate API Key
-              </button>
-            :
-            <label className="modal-add-btn" style={{ opacity: 0.5, cursor: 'not-allowed' }}>
-                Generating...
-              </label>  
-            }
+
+              {!adding ? (
+                <button
+                  className="modal-add-btn"
+                  onClick={handleAddApiKey}
+                  disabled={!nickname.trim()}
+                >
+                  Generate API Key
+                </button>
+              ) : (
+                <label
+                  className="modal-add-btn"
+                  style={{
+                    opacity: 0.5,
+                    cursor: 'not-allowed'
+                  }}
+                >
+                  Generating...
+                </label>
+              )}
+
             </div>
           </div>
         </div>
