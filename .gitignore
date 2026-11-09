@@ -1,0 +1,57 @@
+
+# Dependencies
+node_modules/
+
+# Package manager logs
+npm-debug.log*
+yarn-debug.log*
+pnpm-debug.log*
+lerna-debug.log*
+
+# Environment variables and secrets
+.env
+.env.*
+!.env.example
+
+# Build output
+dist/
+build/
+out/
+
+# Framework caches
+.next/
+.nuxt/
+.svelte-kit/
+.angular/
+.turbo/
+.cache/
+
+# Coverage reports
+coverage/
+
+# Temporary files
+tmp/
+temp/
+*.tmp
+*.log
+
+# OS generated files
+.DS_Store
+Thumbs.db
+
+# IDE and editor files
+.vscode/*
+!.vscode/extensions.json
+.idea/
+*.swp
+*.swo
+
+# Testing
+.nyc_output/
+
+# TypeScript
+*.tsbuildinfo
+
+# Local database files
+*.sqlite
+*.sqlite3
